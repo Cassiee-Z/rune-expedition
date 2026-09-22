@@ -22,6 +22,7 @@ function setLanguage(){
   $('burstLabel').textContent=txt('符文爆发','RUNE BURST');$('guardLabel').textContent=txt('誓约护盾','OATH SHIELD');$('burstHint').textContent=txt('全场伤害 · 8秒冷却','AREA DAMAGE · 8s');$('guardHint').textContent=txt('抵挡重击 · 11秒冷却','BLOCK DAMAGE · 11s');$('heroName').textContent=txt('守誓者','OATHKEEPER');$('bossName').textContent=txt('缄默之王','THE HOLLOW KING');
   $('pause').setAttribute('aria-label',txt('暂停游戏','Pause game'));$('scene').setAttribute('aria-label',txt('符文远征战场','Rune Expedition battlefield'));$('homeMark').setAttribute('aria-label',txt('作品说明','About this demo'));updateSound();updateUI();
   if(modalType==='loot')renderLoot();if(modalType==='pause')renderPause();if(modalType==='howto')renderHowto();if(modalType==='about')renderAbout();if(modalType==='history')renderHistory();if(modalType==='result')renderResult();if(modalType==='details')renderDetails();
+  if(!$('stageBanner').hidden&&g.mode!=='home')$('stageBanner').innerHTML=`<small>${STAGES[g.stage].subtitle[L()]}</small><strong>${STAGES[g.stage].name[L()]}</strong>`;
   if(g.mode==='battle')notice(txt('自动攻击中 · 点击下方技能掌控战局','AUTO ATTACKING · TAP SKILLS TO TURN THE TIDE'),false,2200);
 }
 function updateSound(){$('sound').innerHTML=icon(audio.enabled?'sound':'mute');$('sound').setAttribute('aria-label',audio.enabled?txt('关闭声音','Mute sound'):txt('开启声音','Enable sound'));$('sound').setAttribute('aria-pressed',String(audio.enabled));}
