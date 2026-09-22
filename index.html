@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0a1015">
+  <meta name="description" content="符文远征 Rune Expedition — 一段暗黑奇幻远征。选择装备，唤醒符文，挑战守门者。支持手机及中英文。">
+  <meta property="og:title" content="符文远征 · Rune Expedition">
+  <meta property="og:description" content="三场战斗，一次抉择。即点即玩的暗黑奇幻冒险。">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <title>符文远征 · Rune Expedition</title>
+</head>
+<body>
+  <main id="game" aria-label="Rune Expedition">
+    <canvas id="scene" aria-label="游戏战场"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <header class="topbar">
+      <button id="homeMark" class="wordmark" aria-label="作品说明"><span class="rune-mark">ᛟ</span><span>RUNE<br><b>EXPEDITION</b></span></button>
+      <div class="top-controls">
+        <button id="language" class="tiny-button" aria-label="切换语言">EN</button>
+        <button id="sound" class="icon-button" aria-label="开启声音"></button>
+        <button id="pause" class="icon-button" aria-label="暂停游戏" hidden></button>
+      </div>
+    </header>
+    <section id="hud" class="hud" hidden>
+      <div class="chapter-line"><span id="chapterLabel"></span><span id="waveLabel"></span></div>
+      <div class="health-head"><span id="heroName"></span><span id="healthText"></span></div>
+      <div class="health-track"><div id="healthFill"></div><div id="shieldFill"></div></div>
+      <div class="stats-line"><span id="attackStat"></span><span id="critStat"></span><span id="goldStat"></span></div>
+      <div id="bossHud" class="boss-hud" hidden><div><span id="bossName"></span><span id="bossHealth"></span></div><div class="boss-track"><i id="bossFill"></i></div></div>
+    </section>
+    <div id="combatNotice" class="combat-notice" role="status" aria-live="polite"></div>
+    <div id="stageBanner" class="stage-banner" hidden></div>
+    <section id="controls" class="combat-controls" hidden>
+      <div id="equipped" class="equipped"></div>
+      <div id="battleHint" class="battle-hint"></div>
+      <div class="skill-row">
+        <button id="burst" class="skill-button burst"><span class="skill-art" id="burstIcon"></span><span class="skill-copy"><strong id="burstLabel"></strong><small id="burstHint"></small></span><span class="cooldown" id="burstCd"></span></button>
+        <button id="guard" class="skill-button guard"><span class="skill-art" id="guardIcon"></span><span class="skill-copy"><strong id="guardLabel"></strong><small id="guardHint"></small></span><span class="cooldown" id="guardCd"></span></button>
+      </div>
+      <div class="chapter-progress"><i></i><i></i><i></i></div>
+    </section>
+    <section id="home" class="home-screen">
+      <div class="title-group"><div class="eyebrow" id="homeEyebrow"></div><h1 id="gameTitle"></h1><div class="english-title">RUNE EXPEDITION</div><div class="title-ornament"><i></i><span>◆</span><i></i></div><p id="tagline"></p></div>
+      <div class="home-bottom"><div class="hero-caption"><span id="heroTag"></span><i></i><span id="heroClass"></span></div><button id="start" class="primary-button"><span id="startLabel"></span><span aria-hidden="true">↗</span></button><p id="sessionNote" class="session-note"></p><div class="home-links"><button id="howTo"></button><span>·</span><button id="recordsButton"></button></div><div class="credit">AN ORIGINAL PLAYABLE DEMO · CASSIE</div></div>
+    </section>
+    <section id="overlay" class="overlay" hidden aria-modal="true" role="dialog" aria-labelledby="overlayTitle"><div id="overlayContent" class="overlay-content"></div></section>
+    <div id="toast" class="toast" role="status"></div>
+  </main>
+  <aside class="desktop-note"><span>ᛟ</span><p>RUNE EXPEDITION</p><small>ENTER THE RUINS.<br>REWRITE YOUR FATE.</small></aside>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
