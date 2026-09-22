@@ -24,7 +24,19 @@
 
 ## 本地运行
 
-需要 Node.js 18+ 运行测试，Python 3 或任意静态服务器用于预览。
+直接双击 `index.html` 即可用浏览器运行，无需安装软件或启动服务器。请保留同目录的 `game.js`、`style.css` 和 `icon.svg`。
+
+也可使用交付包内的 `符文远征-双击即玩.html`：全部资源已内嵌，单个文件即可离线试玩。给 HR 发送手机试玩链接时，仍使用上方在线地址。
+
+修改源码后，用 Node.js 18+ 重新构建；构建工具仅开发时使用，玩家不需要安装依赖。
+
+```sh
+npm ci
+npm run build
+npm test
+```
+
+如需通过本地 HTTP 服务器预览：
 
 ```sh
 python3 -m http.server 8765
@@ -38,6 +50,8 @@ node tests/engine.test.js
 - `art.js`：Canvas 场景、角色和特效。
 - `audio.js`：Web Audio 背景音与音效。
 - `app.js`：界面、双语文本、交互、浏览器本地记录。
+- `build.mjs`：生成支持直接打开的经典脚本和单文件离线版。
+- `game.js`：已打包的浏览器运行文件，可从本地 HTML 加载。
 - `style.css`、`index.html`：响应式布局与页面结构。
 - `tests/engine.test.js`：九种装备组合、五组随机种子及暂停、护盾、结算等行为测试。
 

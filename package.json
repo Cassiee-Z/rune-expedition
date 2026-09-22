@@ -1,1 +1,14 @@
-{"name":"rune-expedition","version":"1.0.0","private":true,"type":"module","description":"An original mobile-first dark fantasy browser game demo","scripts":{"test":"node tests/engine.test.js"}}
+{
+  "name": "rune-expedition",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An original mobile-first dark fantasy browser game demo",
+  "scripts": {
+    "test": "node tests/engine.test.js",
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
