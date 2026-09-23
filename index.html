@@ -9,7 +9,7 @@
   <meta property="og:description" content="三场战斗，一次抉择。即点即玩的暗黑奇幻冒险。">
   <meta property="og:type" content="website">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=20260923">
   <title>符文远征 · Rune Expedition</title>
 </head>
 <body>
@@ -27,18 +27,24 @@
     <section id="hud" class="hud" hidden>
       <div class="chapter-line"><span id="chapterLabel"></span><span id="waveLabel"></span></div>
       <div class="health-head"><span id="heroName"></span><span id="healthText"></span></div>
-      <div class="health-track"><div id="healthFill"></div><div id="shieldFill"></div></div>
+      <div class="health-track"><div id="healthFill"></div></div>
+      <div class="stamina-line"><span id="staminaLabel"></span><div class="stamina-track"><i id="staminaFill"></i></div><span id="staminaText"></span></div>
       <div class="stats-line"><span id="attackStat"></span><span id="critStat"></span><span id="goldStat"></span></div>
       <div id="bossHud" class="boss-hud" hidden><div><span id="bossName"></span><span id="bossHealth"></span></div><div class="boss-track"><i id="bossFill"></i></div></div>
     </section>
     <div id="combatNotice" class="combat-notice" role="status" aria-live="polite"></div>
     <div id="stageBanner" class="stage-banner" hidden></div>
     <section id="controls" class="combat-controls" hidden>
+      <div class="mode-row"><button id="autoMode" aria-pressed="false"></button><div id="comboState"></div></div>
       <div id="equipped" class="equipped"></div>
       <div id="battleHint" class="battle-hint"></div>
       <div class="skill-row">
+        <button id="attack" class="skill-button attack"><span class="skill-art" id="attackIcon"></span><span class="skill-copy"><strong id="attackLabel"></strong><small id="attackHint"></small></span></button>
+        <button id="guard" class="skill-button guard" aria-pressed="false"><span class="skill-art" id="guardIcon"></span><span class="skill-copy"><strong id="guardLabel"></strong><small id="guardHint"></small></span></button>
+      </div>
+      <div class="skill-row secondary-skills">
+        <button id="dodge" class="skill-button dodge"><span class="skill-art" id="dodgeIcon"></span><span class="skill-copy"><strong id="dodgeLabel"></strong><small id="dodgeHint"></small></span><span class="cooldown" id="dodgeCd"></span></button>
         <button id="burst" class="skill-button burst"><span class="skill-art" id="burstIcon"></span><span class="skill-copy"><strong id="burstLabel"></strong><small id="burstHint"></small></span><span class="cooldown" id="burstCd"></span></button>
-        <button id="guard" class="skill-button guard"><span class="skill-art" id="guardIcon"></span><span class="skill-copy"><strong id="guardLabel"></strong><small id="guardHint"></small></span><span class="cooldown" id="guardCd"></span></button>
       </div>
       <div class="chapter-progress"><i></i><i></i><i></i></div>
     </section>
@@ -50,6 +56,6 @@
     <div id="toast" class="toast" role="status"></div>
   </main>
   <aside class="desktop-note"><span>ᛟ</span><p>RUNE EXPEDITION</p><small>ENTER THE RUINS.<br>REWRITE YOUR FATE.</small></aside>
-  <script src="./game.js" defer></script>
+  <script src="./game.js?v=20260923" defer></script>
 </body>
 </html>

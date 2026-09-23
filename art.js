@@ -1,3 +1,4 @@
+import {swordPose,armElbow} from './motion.js';
 const TAU=Math.PI*2;
 function rng(seed){return()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
 function poly(c,p,fill,stroke,width=1){c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
@@ -8,8 +9,9 @@ function metal(c,x1,y1,x2,y2,colors=['#253640','#758986','#34454d']){const g=c.c
 function rune(c,x,y,size,color,kind=0){c.save();c.translate(x,y);c.scale(size,size);c.lineWidth=1.2;c.strokeStyle=color;c.beginPath();if(kind%4===0){c.moveTo(0,-5);c.lineTo(0,5);c.moveTo(-4,-2);c.lineTo(0,-5);c.lineTo(4,-2);c.moveTo(-4,2);c.lineTo(0,5);c.lineTo(4,2);}else if(kind%4===1){c.moveTo(-3,5);c.lineTo(-3,-5);c.lineTo(3,-1);c.lineTo(-3,1);c.moveTo(-3,0);c.lineTo(4,5);}else if(kind%4===2){c.moveTo(-4,3);c.lineTo(0,-5);c.lineTo(4,3);c.lineTo(-4,3);c.moveTo(0,3);c.lineTo(0,6);}else{c.moveTo(-3,-4);c.lineTo(3,-4);c.lineTo(-3,4);c.lineTo(3,4);c.moveTo(0,-6);c.lineTo(0,6);}c.stroke();c.restore();}
 
 export class WorldArt {
-  constructor(canvas){this.canvas=canvas;this.c=canvas.getContext('2d',{alpha:false});this.width=440;this.height=820;this.offset=0;this.cache=null;this.motion=!matchMedia('(prefers-reduced-motion: reduce)').matches;this.resize();}
+  constructor(canvas){this.canvas=canvas;this.c=canvas.getContext('2d',{alpha:false});this.width=440;this.height=820;this.offset=0;this.cache=null;this.battleOffset=160;this.motion=!matchMedia('(prefers-reduced-motion: reduce)').matches;this.resize();}
   resize(){const r=this.canvas.getBoundingClientRect();const dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);this.width=r.width;this.height=r.height;this.dpr=dpr;this.scale=r.width/440;this.logicalH=r.height/this.scale;this.offset=(this.logicalH-820)*.45;this.cache=document.createElement('canvas');this.cache.width=880;this.cache.height=Math.ceil(this.logicalH*2);const c=this.cache.getContext('2d');c.scale(2,2);this.background(c);}
+  screenToWorld(x,y){const r=this.canvas.getBoundingClientRect();return {x:(x-r.left)/this.scale,y:(y-r.top)/this.scale-this.battleOffset};}
   background(c){
     const o=this.offset,H=this.logicalH,random=rng(47291);
     const sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#101c26');sky.addColorStop(.35,'#233940');sky.addColorStop(.64,'#18252a');sky.addColorStop(1,'#080f15');c.fillStyle=sky;c.fillRect(0,0,440,H);
@@ -39,7 +41,7 @@ export class WorldArt {
     const fade=c.createLinearGradient(0,H-170,0,H);fade.addColorStop(0,'transparent');fade.addColorStop(1,'#050b11');c.fillStyle=fade;c.fillRect(0,H-170,440,170);
   }
   drawKnight(c,x,y,s,t,h={}){
-    c.save();c.translate(x,y);c.scale(s,s);const bob=h.walk?Math.sin(t*12)*1.8:Math.sin(t*2)*.6;c.translate(0,bob);const attack=h.anim>0?Math.sin(h.anim/.4*Math.PI):0;
+    c.save();c.translate(x,y);c.scale(s*(h.facing||1),s);const bob=h.action?0:h.walk?Math.sin(t*12)*1.2:Math.sin(t*2)*.35;c.translate(0,bob);
     oval(c,0,1,25,8,'#02090e99');
     // Long, torn cloak, with individually shaded folds.
     const wind=Math.sin(t*2.3)*3;
@@ -57,18 +59,29 @@ export class WorldArt {
     // Helmet and visor.
     poly(c,[[-10,-71],[0,-77],[10,-71],[12,-59],[5,-52],[-6,-52],[-12,-59]],metal(c,-12,-72,10,-54,['#2b4049','#bcc4b0','#536e70','#233d46']),'#0b202c',1);
     poly(c,[[-9,-65],[0,-63],[9,-65],[8,-60],[0,-58],[-8,-60]],'#07131e');line(c,[[-7,-62],[-2,-61]],'#b8f9ed',1.4);line(c,[[2,-61],[7,-62]],'#b8f9ed',1.4);line(c,[[0,-75],[0,-64],[2,-56]],'#ccd4bdaa',1);poly(c,[[-3,-78],[0,-87],[3,-78],[2,-70],[-1,-71]],'#9ca58b');
-    // Shield on the left arm.
-    c.save();c.translate(-23,-34);c.rotate(-.15);poly(c,[[-12,-13],[1,-19],[15,-13],[12,8],[1,20],[-10,9]],metal(c,-10,-12,15,13,['#293c45','#637e77','#253d44']),'#b8bda080',1.5);poly(c,[[-6,-10],[1,-13],[8,-10],[7,6],[1,12],[-5,5]],'#233b42','#9cae8b99',1);rune(c,1,0,1.05,'#bedac0');c.restore();
-    // Sword arm with a bright fuller and etched runes.
-    c.save();c.translate(20,-39);c.rotate(-.18-attack*1.5);poly(c,[[-4,0],[4,0],[6,15],[1,19],[-4,15]],'#425c60','#95a58c77');poly(c,[[0,14],[5,14],[5,22],[0,22]],'#192d34');c.translate(3,18);c.rotate(.16);poly(c,[[-3,6],[-3,-48],[0,-64],[4,-48],[3,6]],metal(c,-3,0,4,0,['#6b9093','#e4eacb','#75bbc0']),'#9ee7dc88',.7);line(c,[[0,-49],[0,3]],'#b7f5e5',1);poly(c,[[-12,4],[-8,0],[8,0],[13,4],[7,7],[-7,7]],'#a2a278','#dae0b477');poly(c,[[-2,6],[3,6],[3,18],[-2,18]],'#33434a','#a9ab8a');oval(c,.5,20,3,3,'#a5b18e');for(let j=0;j<3;j++)rune(c,0,-14-j*9,.35,'#28545c',j);c.restore();
+    // A separate shield arm rises into the direction of the threat.
+    const guard=h.guarding||h.action?.kind==='bash',bash=h.action?.kind==='bash'?Math.sin(Math.min(1,h.action.elapsed/h.action.duration)*Math.PI)*13:0;
+    c.save();c.translate(guard?10+bash:-23,guard?-44:-34);c.rotate(guard?.12:-.15);
+    if(guard){glow(c,0,0,35,h.counter>0?'#edcf8644':'#c1ecd32a');line(c,[[-20,0],[-8,6],[0,0]],'#7a9086',7);}
+    poly(c,[[-12,-13],[1,-19],[15,-13],[12,8],[1,20],[-10,9]],metal(c,-10,-12,15,13,['#293c45','#637e77','#253d44']),guard?'#e3dbac':'#b8bda080',guard?2:1.5);poly(c,[[-6,-10],[1,-13],[8,-10],[7,6],[1,12],[-5,5]],'#233b42','#9cae8b99',1);rune(c,1,0,1.05,'#bedac0');c.restore();
+    const pose=swordPose(h.action,h.action?.aim||h.aim,h.facing||1),elbow=armElbow(pose);
+    // The trail follows earlier blade positions, so the edge and hit frame agree.
+    if(h.action&&h.action.kind!=='bash'&&h.action.elapsed>h.action.impact*.62&&h.action.elapsed<h.action.impact+.17){
+      const trail=[];for(let i=5;i>=0;i--){const q=swordPose({...h.action,elapsed:Math.max(0,h.action.elapsed-i*.013)},h.action.aim,h.facing||1);trail.push([q.x+Math.sin(q.angle)*58,q.y-Math.cos(q.angle)*58]);}
+      line(c,trail,h.action.kind==='counter'?'#f1daa9aa':'#bcf1df88',4);line(c,trail,'#e7ffeecc',1);
+    }
+    line(c,[[16,-48],[elbow.x,elbow.y],[pose.x,pose.y]],'#182e36',10);
+    line(c,[[16,-48],[elbow.x,elbow.y]],'#8caaa1',7);line(c,[[elbow.x,elbow.y],[pose.x,pose.y]],'#536f72',7);oval(c,elbow.x,elbow.y,4.5,4.5,'#a0b5a7');
+    c.save();c.translate(pose.x,pose.y);c.rotate(pose.angle);
+    poly(c,[[-3,-8],[-3,-47],[0,-63],[4,-47],[3,-8]],metal(c,-3,0,4,0,['#6b9093','#eef4d7','#75bbc0']),'#9ee7dc88',.7);line(c,[[0,-49],[0,-8]],'#b7f5e5',1);poly(c,[[-11,-7],[-8,-11],[8,-11],[12,-7],[7,-5],[-7,-5]],'#a2a278','#dae0b477');poly(c,[[-2,-4],[3,-4],[3,8],[-2,8]],'#33434a','#a9ab8a');oval(c,.5,10,3,3,'#a5b18e');for(let j=0;j<3;j++)rune(c,0,-18-j*9,.35,'#28545c',j);oval(c,0,0,4.5,4,'#688d87');c.restore();
+    if(h.counter>0){glow(c,pose.x,pose.y,29,'#ffe7a53a');rune(c,0,-100,1.1,'#f6dfaa');}
     if(h.hurt>0){c.globalCompositeOperation='screen';glow(c,0,-40,43,'#d7815444');}
-    if(h.shield>0){const alpha=.45+.15*Math.sin(t*6);c.globalAlpha=alpha;c.strokeStyle='#b5e2c1';c.lineWidth=1.4;c.beginPath();c.ellipse(0,-34,35,51,0,0,TAU);c.stroke();glow(c,0,-34,53,'#8acab927');for(let i=0;i<5;i++){const a=t*.4+i*TAU/5;rune(c,Math.cos(a)*33,-34+Math.sin(a)*49,.6,'#d2e8b3',i);}}
     c.restore();
   }
   drawEnemy(c,e,t){
     const boss=e.kind==='boss',brute=e.kind==='brute',caster=e.kind==='caster';const s=boss?1.9:brute?1.25:1;
     c.save();c.translate(e.x,e.y);c.scale(s,s);if(e.dying)c.globalAlpha=Math.min(1,e.dying/.6);const bob=e.walk?Math.sin(t*10+e.id)*1.8:Math.sin(t*2+e.id);c.translate(0,bob);
-    oval(c,0,0,boss?29:23,8,'#03091099');const at=e.anim>0?Math.sin(e.anim/.4*Math.PI)*5:0;
+    oval(c,0,0,boss?29:23,8,'#03091099');const at=e.telegraph?Math.sin(e.telegraph.elapsed/e.telegraph.duration*Math.PI/2)*13:e.anim>0?-Math.sin(e.anim/.4*Math.PI)*9:0;
     if(!brute&&!boss){
       const hue=caster?['#352b38','#71616a','#271f2d']:['#26383c','#4c6a66','#132a33'];
       poly(c,[[-12,-49],[10,-48],[22,-1],[11,2],[4,-3],[-3,5],[-9,0],[-23,2]],metal(c,-20,-40,20,0,hue),'#11212c',1);
@@ -95,7 +108,7 @@ export class WorldArt {
   }
   drawEffect(c,f,t){const p=f.t/f.duration,a=1-p;c.save();c.globalAlpha=a;
     if(f.kind==='slash'){c.translate(f.x,f.y);c.scale(f.flip||1,.6);c.rotate(-.6+p*1.2);c.strokeStyle=f.color;c.lineWidth=4*(1-p)+.5;c.beginPath();c.arc(0,0,f.r*(.7+p*.3),-.6,1.9);c.stroke();c.lineWidth=1;c.beginPath();c.arc(0,0,f.r+5,-.8,1.3);c.stroke();}
-    else if(f.kind==='nova'||f.kind==='slam'||f.kind==='shield'||f.kind==='spawn'){const r=f.r*(.15+p);glow(c,f.x,f.y-10,r,f.kind==='slam'?'#dc815545':'#9edacc30');c.strokeStyle=f.color;c.lineWidth=f.kind==='spawn'?1:3*(1-p);c.beginPath();c.ellipse(f.x,f.y,r,r*.55,0,0,TAU);c.stroke();if(f.kind!=='shield')for(let i=0;i<12;i++){const angle=i/12*TAU;rune(c,f.x+Math.cos(angle)*r,f.y+Math.sin(angle)*r*.55,(1-p)*1.7,f.color,i);}}
+    else if(f.kind==='nova'||f.kind==='slam'||f.kind==='quake'||f.kind==='shield'||f.kind==='spawn'){const r=f.r*(.15+p);glow(c,f.x,f.y-10,r,f.kind==='slam'?'#dc815545':'#9edacc30');c.strokeStyle=f.color;c.lineWidth=f.kind==='spawn'?1:3*(1-p);c.beginPath();c.ellipse(f.x,f.y,r,r*(f.kind==='quake'?1:.55),0,0,TAU);c.stroke();if(f.kind!=='shield')for(let i=0;i<12;i++){const angle=i/12*TAU;rune(c,f.x+Math.cos(angle)*r,f.y+Math.sin(angle)*r*.55,(1-p)*1.7,f.color,i);}}
     else if(f.kind==='hit'){for(let i=0;i<5;i++){const angle=i/5*TAU;line(c,[[f.x+Math.cos(angle)*f.r*p,f.y+Math.sin(angle)*f.r*p],[f.x+Math.cos(angle)*(f.r*p+5),f.y+Math.sin(angle)*(f.r*p+5)]],f.color,1.5);}}
     else if(f.kind==='lightning'){const dx=f.toX-f.x,dy=f.toY-f.y,pts=[[f.x,f.y]];for(let i=1;i<6;i++)pts.push([f.x+dx*i/6+Math.sin(i*14)*13,f.y+dy*i/6+Math.cos(i*8)*10]);pts.push([f.toX,f.toY]);line(c,pts,f.color,2);glow(c,f.toX,f.toY,20,'#a0dce550');}
     else if(f.kind==='soul'){const x=f.x+(f.toX-f.x)*p,y=f.y+(f.toY-f.y)*p-Math.sin(p*Math.PI)*40;glow(c,x,y,12,'#b4e8c388');oval(c,x,y,2.5,2.5,'#d7f4d4');}
@@ -108,16 +121,23 @@ export class WorldArt {
     for(const x of [105,335]){const y=341+o*.65;glow(c,x,y,48,'#cf85441c');poly(c,[[x-5,y+8],[x+5,y+8],[x+3,y+26],[x-3,y+26]],'#38403a');poly(c,[[x-9,y+3],[x+9,y+3],[x+6,y+10],[x-6,y+10]],'#8a7854');for(let i=0;i<3;i++){const q=t*(this.motion?6:0)+i;poly(c,[[x-5+i*2,y+5],[x-3+Math.sin(q)*3,y-11-i*3],[x+5-i,y+4]],i===2?'#e8c28a99':'#c1834966');}}
     if(this.motion)for(let i=0;i<19;i++){const x=(i*173.7+Math.sin(t*.25+i)*40)%440,y=(i*67+t*(i%3+1)*2)%(this.logicalH-160)+120;c.globalAlpha=.07+Math.sin(t+i)*.04;oval(c,x,y,90+i%4*15,13+i%4*4,'#bad5c9');}c.globalAlpha=1;
     for(let i=0;i<24;i++){const x=(i*133.41+Math.sin(t*.3+i)*18)%440,y=(i*43.13-t*(2+i%3)+this.logicalH*20)%this.logicalH;c.globalAlpha=.16+.2*Math.max(0,Math.sin(t*.6+i));oval(c,x,y,.6+(i%3)*.3,.6+(i%3)*.3,'#c8d2a9');}c.globalAlpha=1;
-    c.save();c.translate(0,o+(isHome?0:160));if(g.shake>0&&this.motion)c.translate(Math.sin(t*67)*g.shake*.35,Math.cos(t*71)*g.shake*.2);
+    c.save();c.translate(0,isHome?o:this.battleOffset);if(g.shake>0&&this.motion)c.translate(Math.sin(t*67)*g.shake*.35,Math.cos(t*71)*g.shake*.2);
     if(isHome){
       // The hero is large enough to read as a character, not an icon.
       glow(c,220,514,128,'#80b6b42d');oval(c,221,635,95,22,'#02091277');this.drawKnight(c,222,626,2.55,t,{});c.save();c.globalAlpha=.23;rune(c,220,681,3.1,'#c2d8ab');c.restore();
     }else{
-      const boss=g.enemies.find(e=>e.kind==='boss'&&!e.dying);
-      if(boss?.telegraph>0){const k=1-boss.telegraph/2.1;oval(c,g.hero.x,g.hero.y,75+12*k,40+8*k,`rgba(181,77,52,${.1+.12*k})`);c.strokeStyle=`rgba(239,152,112,${.5+k*.5})`;c.lineWidth=2;c.beginPath();c.ellipse(g.hero.x,g.hero.y,78,43,0,0,TAU);c.stroke();c.beginPath();c.ellipse(g.hero.x,g.hero.y,78*k,43*k,0,0,TAU);c.stroke();for(let i=0;i<5;i++)rune(c,g.hero.x+Math.cos(i*TAU/5)*65,g.hero.y+Math.sin(i*TAU/5)*36,1,'#eaa87d',i);}
+      for(const e of g.enemies){const a=e.telegraph;if(!a||e.dying)continue;const k=Math.min(1,a.elapsed/a.duration);
+        c.save();c.lineWidth=1.6;
+        if(a.type==='quake'){
+          oval(c,a.x,a.y,a.r,a.r,`rgba(168,52,37,${.13+k*.12})`);c.strokeStyle='#e6a082';c.beginPath();c.arc(a.x,a.y,a.r,0,TAU);c.stroke();c.lineWidth=3;c.strokeStyle='#ffdfbd';c.beginPath();c.arc(a.x,a.y,a.r,-Math.PI/2,-Math.PI/2+TAU*k);c.stroke();rune(c,a.x,a.y,2,'#edb28c');
+        }else{const angle=Math.atan2(a.aim.y,a.aim.x),spread=a.type==='projectile'?.12:Math.acos(.35),range=a.type==='projectile'?145:a.r;c.translate(e.x,e.y);c.rotate(angle);c.fillStyle=`rgba(222,167,77,${.09+k*.15})`;c.strokeStyle=`rgba(240,195,115,${.35+k*.6})`;c.beginPath();c.moveTo(0,0);c.arc(0,0,range,-spread,spread);c.closePath();c.fill();c.stroke();c.lineWidth=3;c.beginPath();c.arc(0,0,range*k,-spread,spread);c.stroke();}
+        c.restore();
+      }
+      const target=g.target();if(target){c.strokeStyle='#d4c99599';c.lineWidth=1;c.beginPath();c.ellipse(target.x,target.y,target.radius+7,(target.radius+7)*.45,0,0,TAU);c.stroke();}
+      const dest=g.hero.moveTarget;if(dest){c.strokeStyle='#a4e4ca99';c.lineWidth=1.4;c.beginPath();c.ellipse(dest.x,dest.y,11,6,0,0,TAU);c.stroke();line(c,[[dest.x-4,dest.y],[dest.x+4,dest.y]],'#d0efd3',1);}
       const actors=[...g.enemies,{...g.hero,isHero:true}].sort((a,b)=>a.y-b.y);
-      for(const actor of actors){if(actor.isHero)this.drawKnight(c,actor.x,actor.y,1.05,t,actor);else this.drawEnemy(c,actor,t);}
-      for(const p of g.projectiles){glow(c,p.x,p.y,15,'#de956b66');oval(c,p.x,p.y,4,4,p.color);}
+      for(const actor of actors){if(actor.isHero){if(actor.dodge){c.save();c.globalAlpha=.18;this.drawKnight(c,actor.x-actor.dodge.x*25,actor.y-actor.dodge.y*25,1.05,t,actor);c.restore();}this.drawKnight(c,actor.x,actor.y,1.05,t,actor);}else this.drawEnemy(c,actor,t);}
+      for(const p of g.projectiles){oval(c,p.x,p.y,7,3,'#1a0c0c55');glow(c,p.x,p.y-32,15,'#de956b66');oval(c,p.x,p.y-32,4,4,p.color);}
       for(const f of g.effects)this.drawEffect(c,f,t);
       for(const n of g.texts){c.save();c.globalAlpha=Math.min(1,(1-n.t/n.duration)*2);c.font=`${n.big?'bold ':''}${n.big?21:14}px Georgia`;c.textAlign='center';c.shadowColor='#000';c.shadowBlur=5;c.fillStyle=n.color;c.fillText(n.text,n.x,n.y-n.t*27);c.restore();}
     }
@@ -127,6 +147,7 @@ export class WorldArt {
 
 export const ICONS={
   sword:'<path d="m6 22 5-5m-4-4 8 8m-4-5 10-13 4-1-1 4-12 12M5 23l-2 2"/>',
+  dodge:'<path d="m8 8 7-4 7 4-7 5zM4 14l7 5m8-7 7 5-11 8-7-4M2 22h4"/>',
   bolt:'<path d="m16 2-11 15h8l-2 12 13-17h-9z"/>',
   shield:'<path d="m15 3 10 4-1 12-9 8-9-8L5 7zM15 8v13m-5-9 5-4 5 4"/>',
   flame:'<path d="M16 2c3 8-5 9-2 14 2-1 4-4 4-7 10 9 7 18-3 18C4 27 1 19 10 10c-1 5 0 7 2 8-3-7 3-9 4-16Z"/>',

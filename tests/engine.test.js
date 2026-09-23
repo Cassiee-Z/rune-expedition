@@ -1,36 +1,21 @@
 import assert from 'node:assert/strict';
-import {Expedition} from '../engine.js';
-function rng(seed){return()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
-function simulate(build,seed=42,skills=true){
-  const g=new Expedition(rng(seed));g.start();let ticks=0;
-  while(g.mode!=='result'&&ticks++<60*600){
-    if(g.mode==='loot')g.choose(build[g.stage]);
-    if(skills&&g.mode==='battle'){
-      const boss=g.enemies.find(e=>e.kind==='boss'&&!e.dying);
-      if(g.enemies.some(e=>!e.dying))g.skill('burst');
-      if(boss?boss.telegraph>0:g.enemies.some(e=>!e.dying&&Math.hypot(e.x-g.hero.x,e.y-g.hero.y)<120))g.skill('guard');
-    }
-    g.update(1/60);
-  }
-  assert.equal(g.mode,'result','Run must end within ten minutes');
-  return g;
-}
-const results=[];
-for(const first of ['ember','storm','iron'])for(const second of ['furnace','thunder','aegis']){
-  const runs=[1,7,42,99,2026].map(seed=>simulate([first,second],seed));
-  results.push({build:`${first}/${second}`,wins:runs.filter(g=>g.stats.won).length,seconds:Math.round(runs.reduce((n,g)=>n+g.time,0)/runs.length),hp:Math.round(runs.reduce((n,g)=>n+g.hero.hp,0)/runs.length)});
-}
-console.table(results);
-assert.ok(results.every(r=>r.wins===5),'All nine builds should support a skilled win across five seeds');
-// Pause must freeze combat and block input.
-const paused=new Expedition(rng(1));paused.start();paused.update(.04);paused.pause();const frozen=JSON.stringify(paused.hero),time=paused.time;
-assert.equal(paused.skill('burst'),false);for(let i=0;i<100;i++)paused.update(.04);assert.equal(paused.time,time);assert.equal(JSON.stringify(paused.hero),frozen);paused.resume();assert.equal(paused.mode,'battle');
-// Damage and shield statistics must match actual absorption.
-const shield=new Expedition(rng(1));shield.start();assert.equal(shield.skill('guard'),true);assert.equal(shield.skill('guard'),false);shield.hurtHero(70,true);assert.equal(shield.hero.hp,240);assert.equal(shield.stats.blocked,70);assert.equal(shield.stats.perfectGuards,1);
-// Unavailable equipment cannot change stage or hero.
-assert.equal(shield.choose('ember'),false);shield.mode='loot';shield.choices=['ember','storm','iron'];assert.equal(shield.choose('aegis'),false);assert.equal(shield.choose('iron'),true);assert.equal(shield.stage,1);assert.equal(shield.hero.maxHp,300);
-// Finishing is idempotent, and later updates cannot mutate the result.
-const death=new Expedition(rng(1));death.start();let finishes=0;death.on(e=>{if(e.type==='result')finishes++;});death.hero.hp=1;const foe=death.spawn('wraith');foe.x=220;foe.y=death.hero.y;foe.timer=0;const foe2=death.spawn('wraith');foe2.x=220;foe2.y=death.hero.y;foe2.timer=0;death.update(.04);assert.equal(death.mode,'result');assert.equal(finishes,1);const final=JSON.stringify(death.stats);death.update(.04);death.finish(false);assert.equal(JSON.stringify(death.stats),final);assert.equal(finishes,1);
-// A win must clear all stages, contain both choices, and have chronological telemetry.
-const winner=simulate(['ember','aegis']);assert.ok(winner.stats.won,'Skilled play should win');assert.equal(winner.stats.stages.length,3);assert.deepEqual(winner.stats.items,['ember','aegis']);assert.ok(winner.stats.events.every((e,i,a)=>i===0||e.at>=a[i-1].at));
-console.log('All engine invariants passed.');
+import {Expedition,COMBO} from '../engine.js';
+import {swordPose,armElbow} from '../motion.js';
+const step=(g,seconds)=>{for(let n=0;n<Math.ceil(seconds/.01);n++)g.update(.01);};
+function arena(){const g=new Expedition(()=>.99);g.start();g.nextWave=999;g.hero.x=180;g.hero.y=350;const e=g.spawn('brute');Object.assign(e,{x:240,y:350,hp:2000,maxHp:2000,phase:999});return {g,h:g.hero,e};}
+let passed=0;function test(name,fn){fn();passed++;console.log('PASS '+name);}
+test('Manual mode does not attack; switching preserves health and an active strike',()=>{const {g,h,e}=arena();step(g,2);assert.equal(e.hp,2000);assert.equal(g.stats.attacks,0);g.requestAttack();const a=h.action;h.hp=222;h.burstCd=5;g.setAuto(true);assert.equal(h.action,a);assert.equal(h.hp,222);assert.equal(h.burstCd,5);step(g,2);assert.ok(g.stats.attacks>=3);assert.ok(e.hp<2000);g.setAuto(false);step(g,1);const damage=g.stats.damage;step(g,2);assert.equal(g.stats.damage,damage);});
+test('Damage occurs at contact, only once per swing; misses do no damage',()=>{const {g,h,e}=arena();g.requestAttack();step(g,.18);assert.equal(e.hp,2000);step(g,.09);assert.equal(e.hp,1977);step(g,.29);assert.equal(e.hp,1977);g.requestAttack();e.x=390;step(g,1);assert.equal(e.hp,1977);});
+test('Button spam queues only one follow-up; a deliberate third tap gives a finisher',()=>{const {g,h}=arena();g.requestAttack();for(let i=0;i<20;i++)g.requestAttack();step(g,.64);assert.equal(g.stats.attacks,2);assert.equal(h.action.index,1);g.requestAttack();step(g,1.8);assert.equal(g.stats.attacks,3);assert.equal(g.stats.finishers,1);assert.equal(h.action,null);});
+test('Ground movement takes priority over chase, including in auto mode',()=>{const {g,h}=arena();g.setAuto(true);g.moveTo(60,440);step(g,2);assert.ok(Math.hypot(h.x-60,h.y-440)<5);const pos={x:h.x,y:h.y};step(g,2);assert.deepEqual({x:h.x,y:h.y},pos);assert.equal(g.stats.attacks,0);g.requestAttack();step(g,1.5);assert.ok(g.stats.attacks>0);});
+test('Perfect parry creates a real, timed riposte; old guard only reduces damage',()=>{const {g,h,e}=arena();g.setGuard(true);g.hurtHero(30,e);assert.equal(h.hp,260);assert.equal(g.stats.perfectGuards,1);assert.ok(h.counter>2);assert.equal(g.requestAttack(),true);assert.equal(h.action.kind,'counter');step(g,.4);assert.ok(e.hp<1930);assert.equal(g.stats.counters,1);const b=arena();b.g.setGuard(true);step(b.g,.35);b.g.hurtHero(30,b.e);assert.equal(b.h.hp,257);assert.equal(b.g.stats.blocked,27);assert.equal(b.h.counter,0);});
+test('Back attacks and red ground attacks bypass the shield',()=>{const {g,h,e}=arena();g.setGuard(true);g.hurtHero(20,{x:h.x-70,y:h.y});assert.equal(h.hp,240);g.hurtHero(56,e,true);assert.equal(h.hp,184);assert.equal(g.stats.perfectGuards,0);});
+test('Re-pressing guard cannot reset the perfect window immediately',()=>{const {g,h,e}=arena();g.setGuard(true);step(g,.35);g.setGuard(false);g.setGuard(true);g.hurtHero(30,e);assert.equal(g.stats.perfectGuards,0);assert.equal(h.hp,257);});
+test('Shield bash costs stamina and interrupts a smaller enemy',()=>{const {g,h,e}=arena();e.phase=0;e.telegraph={type:'melee',elapsed:0,duration:1,aim:{x:-1,y:0},r:83};g.setGuard(true);const before=h.stamina;g.requestAttack();assert.equal(h.action.kind,'bash');assert.equal(h.stamina,before-20);step(g,.28);assert.equal(e.telegraph,null);assert.ok(e.phase>0);assert.equal(g.stats.bashes,1);});
+test('Exhausted guard breaks, a released guard stops draining stamina',()=>{const {g,h,e}=arena();g.setGuard(true);step(g,.4);h.stamina=10;g.hurtHero(40,e);assert.equal(h.stamina,0);assert.equal(h.guarding,false);assert.ok(h.guardLock>0);assert.equal(g.setGuard(true),false);step(g,1);g.setGuard(false);const before=h.stamina;step(g,.4);assert.ok(h.stamina>before);});
+test('Dodge consumes stamina, moves and avoids damage only during its short window',()=>{const {g,h,e}=arena();const x=h.x;g.skill('dodge');assert.equal(h.stamina,78);assert.equal(g.skill('dodge'),false);g.hurtHero(56,e,true);assert.equal(h.hp,260);step(g,.25);assert.ok(h.x<x-70);step(g,.12);g.hurtHero(20,e);assert.equal(h.hp,240);});
+test('Enemy telegraphs lock locations and projectiles do not home',()=>{const {g,h,e}=arena();g.beginEnemyAttack(e,'quake');const a={...e.telegraph};h.x=70;assert.equal(a.x,180);g.resolveEnemyAttack(e,a);assert.equal(h.hp,260);g.beginEnemyAttack(e,'projectile');g.resolveEnemyAttack(e,e.telegraph);const p=g.projectiles[0],vx=p.vx,vy=p.vy;h.y=480;step(g,.1);assert.equal(p.vx,vx);assert.equal(p.vy,vy);});
+test('Pause releases held controls and freezes combat; finish is idempotent',()=>{const {g,h}=arena();g.setGuard(true);g.setMoveInput(1,0);g.pause();assert.equal(h.guarding,false);assert.deepEqual(h.input,{x:0,y:0});const hero=JSON.stringify(h),time=g.time;step(g,2);assert.equal(JSON.stringify(h),hero);assert.equal(g.time,time);assert.equal(g.requestAttack(),false);g.resume();let count=0;g.on(e=>{if(e.type==='result')count++;});g.hurtHero(1000,null,true);assert.equal(g.mode,'result');const stats=JSON.stringify(g.stats);step(g,1);g.finish(false);assert.equal(count,1);assert.equal(JSON.stringify(g.stats),stats);});
+test('Equipment heals, advances and preserves the chosen control mode',()=>{const {g,h}=arena();g.setAuto(true);assert.equal(g.choose('iron'),false);g.mode='loot';g.choices=['ember','storm','iron'];h.hp=100;assert.equal(g.choose('aegis'),false);assert.equal(g.choose('iron'),true);assert.equal(h.maxHp,320);assert.equal(h.hp,288);assert.equal(h.auto,true);assert.equal(g.stage,1);});
+test('Sword contact points face the target; joints and blade rotation are continuous',()=>{for(const facing of [-1,1])for(const aim of [{x:facing,y:0},{x:0,y:-1},{x:0,y:1}])for(let i=0;i<3;i++){const action={kind:'sword',index:i,...COMBO[i]};const contact=swordPose({...action,elapsed:action.impact},aim,facing);assert.ok(Math.abs(Math.sin(contact.angle)*facing-aim.x)<.001);assert.ok(Math.abs(-Math.cos(contact.angle)-aim.y)<.001);let prev;for(let t=0;t<=action.duration;t+=.005){const p=swordPose({...action,elapsed:t},aim,facing),elbow=armElbow(p);assert.ok(Math.abs(Math.hypot(p.x-elbow.x,p.y-elbow.y)-21)<.01);if(prev){assert.ok(Math.abs(p.angle-prev.angle)<.5);assert.ok(Math.hypot(p.x-prev.x,p.y-prev.y)<6);}prev=p;}}});
+console.log(`${passed} combat invariants passed.`);

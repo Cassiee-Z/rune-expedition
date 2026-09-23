@@ -6,6 +6,9 @@ export class RuneAudio {
   noise(duration=.12,volume=.14,freq=1200){if(!this.ctx||!this.enabled)return;const now=this.ctx.currentTime,n=Math.ceil(this.ctx.sampleRate*duration),b=this.ctx.createBuffer(1,n,this.ctx.sampleRate),data=b.getChannelData(0);for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const source=this.ctx.createBufferSource(),filter=this.ctx.createBiquadFilter(),g=this.ctx.createGain();source.buffer=b;filter.type='lowpass';filter.frequency.value=freq;g.gain.value=volume;source.connect(filter);filter.connect(g);g.connect(this.master);source.start(now);source.onended=()=>{source.disconnect();filter.disconnect();g.disconnect();};}
   effect(name){if(!this.ctx||!this.enabled)return;const t=this.ctx.currentTime;
     if(name==='attack'){if(t-this.lastHit<.18)return;this.lastHit=t;this.noise(.09,.17,2500);this.tone(380,t,.08,.06,'triangle',160);}
+    if(name==='swing')this.noise(.13,.085,1400);
+    if(name==='dodge')this.noise(.22,.12,1000);
+    if(name==='block'){this.noise(.07,.12,4200);this.tone(720,t,.17,.12,'triangle',480);}
     if(name==='hurt'){this.noise(.1,.15,350);this.tone(90,t,.12,.18,'sine',45);}
     if(name==='burst'){this.noise(.55,.35,2500);[146.83,220,293.66,440].forEach((f,i)=>this.tone(f,t+i*.04,.75,.2,'triangle',f*.5));}
     if(name==='guard'||name==='perfect'){[293.66,440,587.33].forEach((f,i)=>this.tone(f,t+i*.06,.7,.18,'sine'));}

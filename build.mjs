@@ -25,6 +25,6 @@ const [html,css,icon]=await Promise.all([
 const standalone=html
   .replace(/<link rel="icon"[^>]+>/,`<link rel="icon" href="data:image/svg+xml;base64,${icon.toString('base64')}" type="image/svg+xml">`)
   .replace(/<link rel="stylesheet"[^>]+>/,()=>`<style>${css}</style>`)
-  .replace(/<script src="\.\/game\.js" defer><\/script>/,()=>`<script>${javascript.replace(/<\/script/gi,'<\\/script')}</script>`);
+  .replace(/<script src="\.\/game\.js(?:\?[^"]*)?" defer><\/script>/,()=>`<script>${javascript.replace(/<\/script/gi,'<\\/script')}</script>`);
 await writeFile(new URL('../符文远征-双击即玩.html',import.meta.url),standalone);
 console.log('Built game.js and the standalone offline HTML.');
